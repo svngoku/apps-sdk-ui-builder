@@ -13,7 +13,8 @@
     "verify": "npm run generate:registry && npm run model:smoke && npm run export:smoke && npm run render:smoke && tsc -b && vite build",
     "render:smoke": "node --experimental-strip-types scripts/render-smoke.mts",
     "model:smoke": "node --experimental-strip-types scripts/model-smoke.mts",
-    "build:singlefile": "vite build --config vite.config.singlefile.ts"
+    "build:singlefile": "vite build --config vite.config.singlefile.ts",
+    "screenshot": "npm run build:singlefile && node --experimental-strip-types scripts/screenshot.mts"
   },
   "dependencies": {
     "@openai/apps-sdk-ui": "^0.2.2",
@@ -32,6 +33,7 @@
     "@vitejs/plugin-react": "^6.0.3",
     "happy-dom": "^20.11.1",
     "oxlint": "^1.71.0",
+    "playwright": "^1.62.0",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
     "vite-plugin-singlefile": "^2.3.3"

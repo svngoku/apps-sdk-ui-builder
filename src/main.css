@@ -10,6 +10,45 @@
    from the artifact being composed.
 --------------------------------------------------------------------------- */
 
+/* ---------------------------------------------------------------------------
+   Theme-scoped Tailwind colour mapping
+
+   The SDK re-points its raw `--gray-*` ramp under `[data-theme="dark"]`, so the
+   scale inverts. But the Tailwind bridge (`--color-gray-*: var(--gray-*)`) is
+   declared once inside a single `@theme` block at `:root`, where it resolves
+   against the *root* theme and never re-evaluates for a nested scope.
+
+   The practical effect: `data-theme="dark"` on a subtree flips `--gray-25` to
+   #101010 as intended, yet `bg-gray-25` keeps painting #fcfcfc because it reads
+   the root-resolved `--color-gray-25`. Re-declaring the bridge inside the
+   scope makes the utilities follow the nested theme, which is what lets the
+   code panel be dark while the surrounding chrome stays light.
+--------------------------------------------------------------------------- */
+[data-theme] {
+  /* Text colour is inherited, and the shell sets `text-gray-900` at the app
+     root where it resolves to the *light* value. Without re-asserting it here,
+     a dark subtree would inherit near-black text on a near-black surface. */
+  color: var(--color-text, var(--gray-900));
+
+  --color-gray-0: var(--gray-0);
+  --color-gray-25: var(--gray-25);
+  --color-gray-50: var(--gray-50);
+  --color-gray-75: var(--gray-75);
+  --color-gray-100: var(--gray-100);
+  --color-gray-150: var(--gray-150);
+  --color-gray-200: var(--gray-200);
+  --color-gray-250: var(--gray-250);
+  --color-gray-300: var(--gray-300);
+  --color-gray-400: var(--gray-400);
+  --color-gray-500: var(--gray-500);
+  --color-gray-600: var(--gray-600);
+  --color-gray-700: var(--gray-700);
+  --color-gray-800: var(--gray-800);
+  --color-gray-900: var(--gray-900);
+  --color-gray-950: var(--gray-950);
+  --color-gray-1000: var(--gray-1000);
+}
+
 html,
 body,
 #root {

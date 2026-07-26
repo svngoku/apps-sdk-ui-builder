@@ -3,7 +3,14 @@
 A visual UI builder for [`@openai/apps-sdk-ui`](https://github.com/openai/apps-sdk-ui) — compose
 ChatGPT app interfaces from the SDK's primitives, preview them live, and export clean TSX.
 
-![Builder interface](./docs/screenshot.svg)
+![The builder: palette, live canvas, inspector, and exported TSX](./docs/screenshot.png)
+
+<details>
+<summary>Dark theme</summary>
+
+![The same view with the canvas previewing the SDK's dark theme](./docs/screenshot-dark.png)
+
+</details>
 
 ```bash
 npm install
@@ -138,11 +145,24 @@ It has already earned its keep. The round-trip caught four defects that looked f
 
 None of these were visible in a screenshot. All were caught by compiling the output.
 
-A later polish pass against the [`baseline-ui`](https://ui-skills.com) skill caught a fifth, this
-one purely visual: **the dark-mode toggle did nothing.** The canvas applied a `.dark` class, but the
-SDK themes via `[data-theme]` — a selector that appears zero times in the package's CSS. The toggle
-flipped a class nothing was listening to. It now sets `data-theme` on the canvas surface, which also
-scopes the theme to the preview so the surrounding chrome stays put.
+A later polish pass against the [`baseline-ui`](https://ui-skills.com) skill caught two more, both
+about theming — and both invisible until the UI was screenshotted at full size.
+
+**The dark-mode toggle did nothing.** The canvas applied a `.dark` class, but the SDK themes via
+`[data-theme]` — a selector that appears zero times in the package's CSS. The toggle flipped a class
+nothing was listening to.
+
+**Nested themes then didn't inherit.** Setting `data-theme` on a subtree is necessary but not
+sufficient. The SDK bridges its raw ramp to Tailwind with `--color-gray-*: var(--gray-*)` inside a
+single `@theme` block at `:root`, so those mappings resolve against the *root* theme once and never
+re-evaluate deeper in the tree. A dark subtree got the inverted `--gray-25` but `bg-gray-25` still
+painted the light value; inherited `color` had the same problem, giving near-black text on a
+near-black surface. `src/main.css` re-declares the bridge (and `color`) under `[data-theme]`, which
+is what lets the canvas preview dark while the surrounding chrome stays light.
+
+Screenshots are captured by [`scripts/screenshot.mts`](./scripts/screenshot.mts) — headless Chromium
+against the real build, asserting measured toolbar widths so layout regressions surface as numbers
+rather than something to notice by eye.
 
 ---
 
@@ -155,6 +175,7 @@ scopes the theme to the preview so the surrounding chrome stays put.
 | `npm run verify`            | Full pipeline (above)                            |
 | `npm run generate:registry` | Rebuild the manifest from installed SDK types    |
 | `npm run build:singlefile`  | Inline everything into one portable `index.html` |
+| `npm run screenshot`        | Recapture the README screenshots from the build  |
 
 ## Upgrading the SDK
 
