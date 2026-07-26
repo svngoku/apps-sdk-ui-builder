@@ -5,13 +5,15 @@
  * mediates every mutation so undo/redo covers the whole surface uniformly.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { Canvas, PREVIEW_WIDTHS } from "./builder/Canvas"
 import { CodePanel } from "./builder/CodePanel"
 import { Inspector } from "./builder/Inspector"
 import { LayerTree } from "./builder/LayerTree"
 import { Palette } from "./builder/Palette"
+import { SectionLabel, Select, ToolbarDivider, ToolButton } from "./builder/ui"
+import { cn } from "./lib/cn"
 import { SDK_VERSION } from "./registry"
 import type { PropValue } from "./registry/types"
 import {
@@ -32,29 +34,6 @@ import {
 import { downloadProject, loadLocal, readProjectFile, saveLocal } from "./state/persistence"
 import { STARTER_TEMPLATES } from "./state/templates"
 
-/**
- * Toolbar `<select>` styling.
- *
- * The Apps SDK UI base stylesheet applies `appearance: none` to every
- * `input`/`select`, which strips the native control chrome *and* its intrinsic
- * width — a bare select then collapses or stretches unpredictably. Width and a
- * chevron have to be supplied explicitly.
- */
-const SELECT =
-  "appearance-none rounded border border-neutral-300 bg-white py-1 pl-2 pr-5 text-[11px] " +
-  "text-neutral-800 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
-
-/**
- * Width is set inline rather than via a utility class.
- *
- * The Apps SDK UI base layer sets `appearance: none` on every `select`, which
- * removes the intrinsic width a native control would size itself from. Layer
- * ordering between the SDK's base styles and Tailwind's utilities is not
- * something this app controls, so an inline style is the reliable way to pin
- * the size.
- */
-const SELECT_STYLE: CSSProperties = { width: "8.5rem", flex: "0 0 auto" }
-
 export default function App() {
   const initial = useMemo(() => loadLocal(), [])
 
@@ -68,6 +47,9 @@ export default function App() {
   const [interactive, setInteractive] = useState(true)
   const [showCode, setShowCode] = useState(true)
   const [notice, setNotice] = useState<string | null>(null)
+  // Clearing the canvas is irreversible from the user's point of view, so it
+  // asks first rather than relying on them discovering undo.
+  const [confirmClear, setConfirmClear] = useState(false)
 
   const doc = history.present
   const fileInput = useRef<HTMLInputElement>(null)
@@ -240,36 +222,37 @@ export default function App() {
   /* ------------------------------ Render --------------------------------- */
 
   return (
-    <div className="flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
+    <div className="flex h-dvh flex-col bg-surface text-gray-900">
       {/* Toolbar */}
-      <header className="flex shrink-0 items-center gap-3 border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
+      <header className="flex shrink-0 items-center gap-1.5 border-b border-subtle px-3 py-2">
         <div className="flex shrink-0 items-baseline gap-2">
-          <h1 className="whitespace-nowrap text-[13px] font-semibold">Apps SDK UI Builder</h1>
-          <span className="text-[10px] text-neutral-500">v{SDK_VERSION}</span>
+          <h1 className="whitespace-nowrap text-sm font-semibold">Apps SDK UI Builder</h1>
+          <span className="text-xs tabular-nums text-tertiary">v{SDK_VERSION}</span>
         </div>
 
-        <div className="mx-2 h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
+        <ToolbarDivider />
 
-        <ToolbarButton
+        <ToolButton
           onClick={() => setHistory((current) => undo(current))}
           disabled={history.past.length === 0}
-          label="Undo"
-        />
-        <ToolbarButton
+        >
+          Undo
+        </ToolButton>
+        <ToolButton
           onClick={() => setHistory((current) => redo(current))}
           disabled={history.future.length === 0}
-          label="Redo"
-        />
+        >
+          Redo
+        </ToolButton>
 
-        <div className="mx-2 h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
+        <ToolbarDivider />
 
-        <select
+        <Select
+          aria-label="Preview width"
           value={previewWidth === null ? "full" : String(previewWidth)}
           onChange={(event) =>
             setPreviewWidth(event.target.value === "full" ? null : Number(event.target.value))
           }
-          className={SELECT}
-          style={SELECT_STYLE}
         >
           {PREVIEW_WIDTHS.map((width) => (
             <option key={width.label} value={width.value === null ? "full" : String(width.value)}>
@@ -277,28 +260,43 @@ export default function App() {
               {width.value ? ` · ${width.value}px` : ""}
             </option>
           ))}
-        </select>
+        </Select>
 
-        <ToolbarToggle active={dark} onClick={() => setDark((value) => !value)} label="Dark" />
-        <ToolbarToggle
-          active={!interactive}
+        <ToolButton
+          variant={dark ? "active" : "default"}
+          aria-pressed={dark}
+          onClick={() => setDark((value) => !value)}
+          title="Preview the canvas with the SDK's dark theme"
+        >
+          Dark
+        </ToolButton>
+        <ToolButton
+          variant={!interactive ? "active" : "default"}
+          aria-pressed={!interactive}
           onClick={() => {
             setInteractive((value) => !value)
             setSelectedId(null)
           }}
-          label="Preview"
           title="Disable editing affordances so components behave normally"
-        />
-        <ToolbarToggle active={showCode} onClick={() => setShowCode((v) => !v)} label="Code" />
+        >
+          Preview
+        </ToolButton>
+        <ToolButton
+          variant={showCode ? "active" : "default"}
+          aria-pressed={showCode}
+          onClick={() => setShowCode((value) => !value)}
+        >
+          Code
+        </ToolButton>
 
-        <div className="ml-auto flex items-center gap-1">
-          {notice ? (
-            <span className="mr-2 rounded bg-amber-100 px-2 py-1 text-[11px] text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-              {notice}
-            </span>
-          ) : null}
+        <div className="ms-auto flex items-center gap-1.5">
+          {/* Status messages appear next to the controls that trigger them. */}
+          <span aria-live="polite" className="text-xs text-pretty text-tertiary">
+            {notice}
+          </span>
 
-          <select
+          <Select
+            aria-label="Load a starter template"
             value=""
             onChange={(event) => {
               const template = STARTER_TEMPLATES.find((t) => t.name === event.target.value)
@@ -307,8 +305,6 @@ export default function App() {
               setSelectedId(null)
               flash(`Loaded “${template.name}”.`)
             }}
-            className={SELECT}
-            style={SELECT_STYLE}
           >
             <option value="">Templates…</option>
             {STARTER_TEMPLATES.map((template) => (
@@ -316,17 +312,17 @@ export default function App() {
                 {template.name}
               </option>
             ))}
-          </select>
+          </Select>
 
-          <ToolbarButton label="Import" onClick={() => fileInput.current?.click()} />
-          <ToolbarButton label="Export" onClick={() => downloadProject(doc, componentName)} />
-          <ToolbarButton
-            label="Clear"
-            onClick={() => {
-              setHistory((current) => commit(current, { root: [] }))
-              setSelectedId(null)
-            }}
-          />
+          <ToolButton onClick={() => fileInput.current?.click()}>Import</ToolButton>
+          <ToolButton onClick={() => downloadProject(doc, componentName)}>Export</ToolButton>
+          <ToolButton
+            variant="danger"
+            onClick={() => setConfirmClear(true)}
+            disabled={doc.root.length === 0}
+          >
+            Clear
+          </ToolButton>
           <input
             ref={fileInput}
             type="file"
@@ -343,20 +339,20 @@ export default function App() {
 
       {/* Panes */}
       <div className="flex min-h-0 flex-1">
-        <aside className="flex w-60 shrink-0 flex-col border-r border-neutral-200 dark:border-neutral-800">
+        <aside className="flex w-60 shrink-0 flex-col border-e border-subtle">
           <div className="min-h-0 flex-1">
             <Palette onAdd={handleAdd} onDragComponent={setDraggingComponent} />
           </div>
-          <div className="max-h-56 shrink-0 overflow-y-auto border-t border-neutral-200 dark:border-neutral-800">
-            <h3 className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
-              Layers
-            </h3>
-            <LayerTree
-              nodes={doc.root}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              onHover={setHoveredId}
-            />
+          <div className="flex max-h-56 shrink-0 flex-col overflow-hidden border-t border-subtle">
+            <SectionLabel className="px-3 pt-2">Layers</SectionLabel>
+            <div className="builder-scroll overflow-y-auto">
+              <LayerTree
+                nodes={doc.root}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                onHover={setHoveredId}
+              />
+            </div>
           </div>
         </aside>
 
@@ -377,7 +373,7 @@ export default function App() {
             />
           </div>
           {showCode ? (
-            <div className="h-64 shrink-0 border-t border-neutral-200 dark:border-neutral-800">
+            <div className="h-64 shrink-0 border-t border-subtle">
               <CodePanel
                 doc={doc}
                 componentName={componentName}
@@ -387,7 +383,7 @@ export default function App() {
           ) : null}
         </main>
 
-        <aside className="w-72 shrink-0 border-l border-neutral-200 dark:border-neutral-800">
+        <aside className="w-72 shrink-0 border-s border-subtle">
           <Inspector
             node={selectedNode}
             onChangeProp={handleChangeProp}
@@ -397,59 +393,94 @@ export default function App() {
           />
         </aside>
       </div>
+
+      <ConfirmDialog
+        open={confirmClear}
+        title="Clear the canvas?"
+        body={`This removes all ${doc.root.length} top-level component${
+          doc.root.length === 1 ? "" : "s"
+        }. You can still undo with ⌘Z.`}
+        confirmLabel="Clear canvas"
+        onCancel={() => setConfirmClear(false)}
+        onConfirm={() => {
+          setHistory((current) => commit(current, { root: [] }))
+          setSelectedId(null)
+          setConfirmClear(false)
+        }}
+      />
     </div>
   )
 }
 
 /* -------------------------------------------------------------------------- */
-/* Toolbar atoms                                                               */
+/* Confirm dialog                                                              */
 /* -------------------------------------------------------------------------- */
 
-function ToolbarButton({
-  label,
-  onClick,
-  disabled,
-}: {
-  label: string
-  onClick: () => void
-  disabled?: boolean
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="rounded border border-neutral-300 px-2 py-1 text-[11px] text-neutral-700 transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
-    >
-      {label}
-    </button>
-  )
-}
-
-function ToolbarToggle({
-  label,
-  active,
-  onClick,
+/**
+ * Confirmation for destructive, irreversible actions.
+ *
+ * Built on the native `<dialog>` element rather than a hand-rolled overlay:
+ * the platform already provides the modal semantics, focus trapping, backdrop,
+ * and Escape-to-close that would otherwise have to be reimplemented — and
+ * reimplemented focus management is where custom modals usually go wrong.
+ */
+function ConfirmDialog({
+  open,
   title,
+  body,
+  confirmLabel,
+  onConfirm,
+  onCancel,
 }: {
-  label: string
-  active: boolean
-  onClick: () => void
-  title?: string
+  open: boolean
+  title: string
+  body: string
+  confirmLabel: string
+  onConfirm: () => void
+  onCancel: () => void
 }) {
+  const ref = useRef<HTMLDialogElement>(null)
+
+  // `showModal()` is imperative by nature, so the DOM state is synced to the
+  // `open` prop rather than expressed declaratively.
+  useEffect(() => {
+    const dialog = ref.current
+    if (!dialog) return
+    if (open && !dialog.open) dialog.showModal()
+    if (!open && dialog.open) dialog.close()
+  }, [open])
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className={
-        "rounded border px-2 py-1 text-[11px] transition-colors " +
-        (active
-          ? "border-blue-500 bg-blue-500 text-white"
-          : "border-neutral-300 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800")
-      }
+    <dialog
+      ref={ref}
+      onCancel={(event) => {
+        event.preventDefault()
+        onCancel()
+      }}
+      onClick={(event) => {
+        // Clicking the backdrop (the dialog element itself) dismisses.
+        if (event.target === ref.current) onCancel()
+      }}
+      className={cn(
+        "m-auto w-90 max-w-[calc(100vw-2rem)] rounded-xl border border-default bg-surface p-0",
+        "text-gray-900 shadow-lg backdrop:bg-black/40",
+      )}
+      aria-labelledby="confirm-title"
     >
-      {label}
-    </button>
+      <div className="p-4">
+        <h2 id="confirm-title" className="text-sm font-semibold text-balance">
+          {title}
+        </h2>
+        <p className="mt-1 text-xs text-pretty text-secondary">{body}</p>
+        <div className="mt-4 flex justify-end gap-2">
+          <ToolButton onClick={onCancel} autoFocus>
+            Cancel
+          </ToolButton>
+          <ToolButton variant="danger" onClick={onConfirm}>
+            {confirmLabel}
+          </ToolButton>
+        </div>
+      </div>
+    </dialog>
   )
 }

@@ -10,8 +10,10 @@
 
 import { useMemo, useState } from "react"
 
+import { cn } from "../lib/cn"
 import { getEntry, ICON_NAMES, isTextualPrimitive, isVoidPrimitive } from "../registry"
 import type { PropSchema, PropValue, UINode } from "../registry/types"
+import { EmptyState, PanelHeader, Select, TextAreaField, TextField, ToolButton } from "./ui"
 
 type InspectorProps = {
   node: UINode | null
@@ -20,11 +22,6 @@ type InspectorProps = {
   onDelete: () => void
   onDuplicate: () => void
 }
-
-const FIELD =
-  "w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-[13px] " +
-  "text-neutral-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 " +
-  "dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
 
 export function Inspector({
   node,
@@ -35,9 +32,11 @@ export function Inspector({
 }: InspectorProps) {
   if (!node) {
     return (
-      <div className="flex h-full items-center justify-center p-6 text-center text-[13px] text-neutral-500">
-        Select a component on the canvas to edit its properties.
-      </div>
+      <EmptyState
+        className="h-full"
+        title="Nothing selected"
+        hint="Select a component on the canvas to edit its properties."
+      />
     )
   }
 
@@ -49,36 +48,18 @@ export function Inspector({
 
   return (
     <div className="flex h-full flex-col">
-      <header className="border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
-        <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <h2 className="truncate text-[13px] font-semibold text-neutral-900 dark:text-neutral-100">
-              {node.component}
-            </h2>
-            {entry.blurb ? (
-              <p className="truncate text-[11px] text-neutral-500">{entry.blurb}</p>
-            ) : null}
-          </div>
-          <div className="flex shrink-0 gap-1">
-            <button
-              type="button"
-              onClick={onDuplicate}
-              title="Duplicate"
-              className="rounded border border-neutral-300 px-2 py-1 text-[11px] text-neutral-700 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
-            >
-              Duplicate
-            </button>
-            <button
-              type="button"
-              onClick={onDelete}
-              title="Delete"
-              className="rounded border border-red-300 px-2 py-1 text-[11px] text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
-            >
-              Delete
-            </button>
-          </div>
+      <PanelHeader>
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-sm font-semibold text-gray-900">{node.component}</h2>
+          {entry.blurb ? (
+            <p className="truncate text-xs text-tertiary">{entry.blurb}</p>
+          ) : null}
         </div>
-      </header>
+        <ToolButton onClick={onDuplicate}>Duplicate</ToolButton>
+        <ToolButton variant="danger" onClick={onDelete}>
+          Delete
+        </ToolButton>
+      </PanelHeader>
 
       <div className="builder-scroll flex-1 overflow-y-auto px-4 py-3">
         {editableText && !isVoidPrimitive(node.component) ? (
@@ -86,8 +67,7 @@ export function Inspector({
             label="Content"
             hint="Text rendered inside this component"
           >
-            <textarea
-              className={FIELD}
+            <TextAreaField
               rows={node.component === "Markdown" || node.component === "CodeBlock" ? 5 : 2}
               value={node.text ?? ""}
               onChange={(event) => onChangeText(event.target.value)}
@@ -97,7 +77,7 @@ export function Inspector({
         ) : null}
 
         {entry.props.length === 0 ? (
-          <p className="py-4 text-[12px] text-neutral-500">
+          <p className="py-4 text-xs text-pretty text-tertiary">
             This component exposes no configurable props.
           </p>
         ) : (
@@ -133,13 +113,11 @@ function Field({
   return (
     <div className="mb-3">
       <label className="mb-1 flex items-baseline gap-1.5">
-        <span className="text-[12px] font-medium text-neutral-800 dark:text-neutral-200">
-          {label}
-        </span>
-        {required ? <span className="text-[11px] text-red-500">required</span> : null}
+        <span className="text-xs font-medium text-secondary">{label}</span>
+        {required ? <span className="text-xs text-red-600">required</span> : null}
       </label>
       {children}
-      {hint ? <p className="mt-1 text-[11px] leading-snug text-neutral-500">{hint}</p> : null}
+      {hint ? <p className="mt-1 text-xs text-pretty text-tertiary">{hint}</p> : null}
     </div>
   )
 }
@@ -216,8 +194,8 @@ function EnumField({
 
   return (
     <Field label={schema.name} hint={schema.description} required={schema.required}>
-      <select
-        className={FIELD}
+      <Select
+        className="w-full"
         value={current === undefined ? "" : String(current)}
         onChange={(event) =>
           onChange(event.target.value === "" ? undefined : coerceEnum(schema, event.target.value))
@@ -230,7 +208,7 @@ function EnumField({
             {schema.defaultValue === option ? "  (default)" : ""}
           </option>
         ))}
-      </select>
+      </Select>
     </Field>
   )
 }
@@ -261,12 +239,14 @@ function ChoiceChip({
     <button
       type="button"
       onClick={onClick}
-      className={
-        "rounded-md border px-2 py-1 text-[11px] transition-colors " +
-        (active
-          ? "border-blue-500 bg-blue-500 text-white"
-          : "border-neutral-300 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800")
-      }
+      aria-pressed={active}
+      className={cn(
+        "rounded-md border px-2 py-1 text-xs transition-colors",
+        "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-blue-500",
+        active
+          ? "border-blue-600 bg-blue-600 text-white"
+          : "border-default text-secondary hover:bg-gray-100 hover:text-gray-900",
+      )}
     >
       {label}
     </button>
@@ -288,15 +268,14 @@ function BooleanField({
   return (
     <div className="mb-3 flex items-start justify-between gap-3">
       <div className="min-w-0">
-        <p className="text-[12px] font-medium text-neutral-800 dark:text-neutral-200">
-          {schema.name}
-        </p>
+        <p className="text-xs font-medium text-secondary">{schema.name}</p>
         {schema.description ? (
-          <p className="text-[11px] leading-snug text-neutral-500">{schema.description}</p>
+          <p className="text-xs text-pretty text-tertiary">{schema.description}</p>
         ) : null}
       </div>
       <input
         type="checkbox"
+        aria-label={schema.name}
         className="mt-0.5 size-4 shrink-0 accent-blue-600"
         checked={checked}
         onChange={(event) =>
@@ -320,9 +299,9 @@ function StringField({
 
   return (
     <Field label={schema.name} hint={schema.description} required={schema.required}>
-      <input
+      <TextField
         type="text"
-        className={FIELD}
+        aria-label={schema.name}
         value={current === undefined ? "" : String(current)}
         placeholder={schema.defaultValue !== undefined ? String(schema.defaultValue) : ""}
         onChange={(event) =>
@@ -350,9 +329,10 @@ function NumberField({
 
   return (
     <Field label={schema.name} hint={schema.description} required={schema.required}>
-      <input
+      <TextField
         type="number"
-        className={FIELD}
+        aria-label={schema.name}
+        className="tabular-nums"
         value={current === undefined ? "" : Number(current)}
         placeholder={schema.defaultValue !== undefined ? String(schema.defaultValue) : ""}
         onChange={(event) => {
@@ -394,27 +374,27 @@ function IconField({
     >
       {current ? (
         <div className="mb-1.5 flex items-center gap-2">
-          <code className="rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] dark:bg-neutral-800">
+          <code className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-900">
             {current}
           </code>
           <button
             type="button"
-            className="text-[11px] text-neutral-500 underline"
+            className="text-xs text-tertiary underline hover:text-secondary"
             onClick={() => onChange(undefined)}
           >
             clear
           </button>
         </div>
       ) : null}
-      <input
+      <TextField
         type="search"
-        className={FIELD}
+        aria-label={`Search ${schema.name} icons`}
         placeholder="Search icons…"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
       />
       {query ? (
-        <div className="builder-scroll mt-1.5 max-h-36 overflow-y-auto rounded-md border border-neutral-200 dark:border-neutral-800">
+        <div className="builder-scroll mt-1.5 max-h-36 overflow-y-auto rounded-md border border-default">
           {matches.map((name) => (
             <button
               key={name}
@@ -423,13 +403,13 @@ function IconField({
                 onChange({ kind: "icon", iconName: name })
                 setQuery("")
               }}
-              className="block w-full px-2 py-1 text-left text-[11px] hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              className="block w-full px-2 py-1 text-left text-xs text-secondary hover:bg-gray-100 hover:text-gray-900"
             >
               {name}
             </button>
           ))}
           {matches.length === 0 ? (
-            <p className="px-2 py-1.5 text-[11px] text-neutral-500">No matching icons</p>
+            <p className="px-2 py-1.5 text-xs text-tertiary">No matching icons</p>
           ) : null}
         </div>
       ) : null}
@@ -464,8 +444,9 @@ function ExpressionField({
       hint={schema.description ? `${schema.description} · ${schema.typeText}` : schema.typeText}
       required={schema.required}
     >
-      <textarea
-        className={`${FIELD} font-mono text-[11px]`}
+      <TextAreaField
+        aria-label={schema.name}
+        className="font-mono"
         rows={2}
         spellCheck={false}
         value={current}

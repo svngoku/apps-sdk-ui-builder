@@ -226,7 +226,7 @@ export function renderNode({ node, ctx }: RenderArgs): ReactNode {
         <span
           key={node.id}
           {...affordances}
-          className="inline-flex size-4 items-center justify-center rounded border border-dashed text-[9px] opacity-60"
+          className="inline-flex size-4 items-center justify-center rounded border border-dashed text-xs opacity-60"
           title="No icon selected"
         >
           ?

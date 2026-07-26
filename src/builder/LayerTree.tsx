@@ -6,6 +6,7 @@
  * and `display: contents` wrappers have no clickable box of their own.
  */
 
+import { cn } from "../lib/cn"
 import type { UINode } from "../registry/types"
 
 type LayerTreeProps = {
@@ -17,7 +18,7 @@ type LayerTreeProps = {
 
 export function LayerTree({ nodes, selectedId, onSelect, onHover }: LayerTreeProps) {
   if (nodes.length === 0) {
-    return <p className="px-3 py-2 text-[11px] text-neutral-500">Canvas is empty.</p>
+    return <p className="px-3 py-2 text-xs text-tertiary">Canvas is empty.</p>
   }
 
   return (
@@ -50,7 +51,6 @@ function LayerRow({
   onHover: (id: string | null) => void
 }) {
   const isSelected = node.id === selectedId
-  const label = node.text ? `${node.component} · ${truncate(node.text)}` : node.component
 
   return (
     <li>
@@ -59,15 +59,24 @@ function LayerRow({
         onClick={() => onSelect(node.id)}
         onMouseEnter={() => onHover(node.id)}
         onMouseLeave={() => onHover(null)}
-        style={{ paddingLeft: 8 + depth * 12 }}
-        className={
-          "flex w-full items-center gap-1 py-1 pr-2 text-left text-[11px] transition-colors " +
-          (isSelected
-            ? "bg-blue-500 text-white"
-            : "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800")
-        }
+        aria-current={isSelected ? "true" : undefined}
+        // Indentation is data-driven, so it stays inline rather than becoming
+        // an unbounded set of padding utilities.
+        style={{ paddingInlineStart: 8 + depth * 12 }}
+        className={cn(
+          "flex w-full items-baseline gap-1.5 py-1 pe-2 text-left text-xs transition-colors",
+          "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-500",
+          isSelected
+            ? "bg-blue-600 text-white"
+            : "text-secondary hover:bg-gray-100 hover:text-gray-900",
+        )}
       >
-        <span className="truncate">{label}</span>
+        <span className="truncate font-medium">{node.component}</span>
+        {node.text ? (
+          <span className={cn("truncate", isSelected ? "text-blue-100" : "text-tertiary")}>
+            {node.text}
+          </span>
+        ) : null}
       </button>
 
       {node.children.length > 0 ? (
@@ -87,6 +96,3 @@ function LayerRow({
     </li>
   )
 }
-
-const truncate = (text: string, max = 18) =>
-  text.length > max ? `${text.slice(0, max)}…` : text

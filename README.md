@@ -94,6 +94,13 @@ exporter emits the concrete tag (`<Maps />`) with the right named import.
 cards from `div`s with Tailwind classes. `Card`, `Stack`, `Row`, `Grid` etc. follow that idiom and
 export as plain elements, not fictional components.
 
+**The builder's own chrome is styled with the SDK's tokens.** The package redefines its `--gray-*`
+ramp under `[data-theme="dark"]`, so the scale *inverts* rather than needing a parallel set of
+`dark:` variants — `--gray-100` is `#ededed` in light and `#181818` in dark. Styling the chrome with
+`gray-*` and the semantic aliases (`bg-surface`, `text-secondary`, `border-default`) means one
+source of truth instead of two that drift. Shared controls live in
+[`src/builder/ui.tsx`](./src/builder/ui.tsx).
+
 ---
 
 ## Verification
@@ -130,6 +137,12 @@ It has already earned its keep. The round-trip caught four defects that looked f
 4. **Text/children precedence was inverted**, silently discarding nested icons.
 
 None of these were visible in a screenshot. All were caught by compiling the output.
+
+A later polish pass against the [`baseline-ui`](https://ui-skills.com) skill caught a fifth, this
+one purely visual: **the dark-mode toggle did nothing.** The canvas applied a `.dark` class, but the
+SDK themes via `[data-theme]` — a selector that appears zero times in the package's CSS. The toggle
+flipped a class nothing was listening to. It now sets `data-theme` on the canvas surface, which also
+scopes the theme to the preview so the surrounding chrome stays put.
 
 ---
 

@@ -43,22 +43,29 @@ body {
 }
 
 /* Selection + hover affordances on the canvas. Outlines are used instead of
-   borders so that they never affect layout of the composed UI. */
+   borders so that they never affect layout of the composed UI.
+
+   The accent resolves to the SDK's own `--blue-500`, so the editing affordances
+   stay legible against both themes instead of being pinned to one hex value. */
+:root {
+  --builder-accent: var(--blue-500, #2563eb);
+}
+
 [data-node-selected="true"] {
-  outline: 2px solid var(--builder-accent, #2563eb);
+  outline: 2px solid var(--builder-accent);
   outline-offset: 1px;
   border-radius: 3px;
 }
 
 [data-node-hovered="true"]:not([data-node-selected="true"]) {
-  outline: 1px dashed color-mix(in oklab, var(--builder-accent, #2563eb) 60%, transparent);
+  outline: 1px dashed color-mix(in oklab, var(--builder-accent) 60%, transparent);
   outline-offset: 1px;
   border-radius: 3px;
 }
 
 [data-drop-target="true"] {
-  background-color: color-mix(in oklab, var(--builder-accent, #2563eb) 8%, transparent);
-  outline: 2px dashed var(--builder-accent, #2563eb);
+  background-color: color-mix(in oklab, var(--builder-accent) 8%, transparent);
+  outline: 2px dashed var(--builder-accent);
   outline-offset: -2px;
   border-radius: 6px;
 }

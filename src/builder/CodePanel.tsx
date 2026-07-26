@@ -10,6 +10,7 @@ import { useMemo, useState } from "react"
 
 import type { UIDocument } from "../state/document"
 import { exportStats, exportToTsx } from "../state/export"
+import { TextField, ToolButton } from "./ui"
 
 type CodePanelProps = {
   doc: UIDocument
@@ -44,36 +45,27 @@ export function CodePanel({ doc, componentName, onComponentNameChange }: CodePan
   }
 
   return (
-    <div className="flex h-full flex-col bg-neutral-950">
-      <header className="flex items-center gap-2 border-b border-neutral-800 px-3 py-2">
-        <input
+    // The code panel is always dark: it reads as an editor surface, and pinning
+    // `data-theme` keeps it stable when the canvas preview toggles theme.
+    <div data-theme="dark" className="flex h-full flex-col bg-gray-25">
+      <header className="flex shrink-0 items-center gap-2 border-b border-subtle px-3 py-2">
+        <TextField
           value={componentName}
           onChange={(event) => onComponentNameChange(event.target.value)}
           spellCheck={false}
-          className="w-40 rounded border border-neutral-700 bg-neutral-900 px-2 py-1 font-mono text-[11px] text-neutral-100 outline-none focus:border-blue-500"
+          aria-label="Exported component name"
+          className="w-40 font-mono"
         />
-        <span className="text-[11px] text-neutral-500">
+        <span className="text-xs tabular-nums text-tertiary">
           {stats.nodes} nodes · {stats.components} SDK components
         </span>
-        <div className="ml-auto flex gap-1">
-          <button
-            type="button"
-            onClick={copy}
-            className="rounded border border-neutral-700 px-2 py-1 text-[11px] text-neutral-300 hover:bg-neutral-800"
-          >
-            {copied ? "Copied" : "Copy"}
-          </button>
-          <button
-            type="button"
-            onClick={download}
-            className="rounded border border-neutral-700 px-2 py-1 text-[11px] text-neutral-300 hover:bg-neutral-800"
-          >
-            Download
-          </button>
+        <div className="ms-auto flex gap-1">
+          <ToolButton onClick={copy}>{copied ? "Copied" : "Copy"}</ToolButton>
+          <ToolButton onClick={download}>Download</ToolButton>
         </div>
       </header>
 
-      <pre className="builder-scroll flex-1 overflow-auto px-3 py-3 font-mono text-[11px] leading-relaxed text-neutral-200">
+      <pre className="builder-scroll flex-1 overflow-auto px-3 py-3 font-mono text-xs leading-relaxed text-secondary">
         <code>{code}</code>
       </pre>
     </div>

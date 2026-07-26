@@ -15,6 +15,7 @@ import { canContain, getEntry } from "../registry"
 import type { UINode } from "../registry/types"
 import type { UIDocument } from "../state/document"
 import { renderNode, type RendererContext } from "./NodeRenderer"
+import { EmptyState } from "./ui"
 
 export type PreviewWidth = { label: string; value: number | null }
 
@@ -137,34 +138,36 @@ export function Canvas({
 
   return (
     <div
-      className="builder-scroll flex h-full justify-center overflow-auto bg-neutral-100 p-8 dark:bg-neutral-950"
+      className="builder-scroll flex h-full justify-center overflow-auto bg-gray-100 p-8"
       onClick={() => interactive && onSelect(null)}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onDragLeave={() => setDropTargetId(null)}
     >
+      {/*
+        The SDK themes via `[data-theme]`, re-pointing its colour variables at
+        that scope — a `.dark` class does nothing, because the selector appears
+        nowhere in the package's CSS. Setting the attribute here is what makes
+        the previewed components actually switch theme, and scoping it to the
+        canvas surface means the preview can be dark while the builder chrome
+        around it stays light.
+      */}
       <div
         ref={surfaceRef}
-        className={
-          "h-fit min-h-[240px] w-full rounded-xl bg-page p-6 shadow-sm transition-[max-width] " +
-          (dark ? "dark" : "")
-        }
-        style={{ maxWidth: width ?? "100%" }}
+        data-theme={dark ? "dark" : "light"}
         data-canvas-surface="true"
+        className="h-fit min-h-60 w-full rounded-xl bg-surface p-6 shadow-sm transition-[max-width]"
+        style={{ maxWidth: width ?? "100%" }}
       >
         {doc.root.length === 0 ? (
-          <div className="flex min-h-[200px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-neutral-300 text-center dark:border-neutral-700">
-            <p className="text-[13px] font-medium text-neutral-600 dark:text-neutral-400">
-              Drag a component here
-            </p>
-            <p className="text-[11px] text-neutral-500">
-              or click one in the palette to add it
-            </p>
+          <div className="flex min-h-50 items-center justify-center rounded-lg border border-dashed border-default">
+            <EmptyState
+              title="Drag a component here"
+              hint="Or click any component in the palette to add it to the canvas."
+            />
           </div>
         ) : (
-          doc.root.map((node, index) =>
-            renderNode({ node, ctx, index, parentId: null }),
-          )
+          doc.root.map((node, index) => renderNode({ node, ctx, index, parentId: null }))
         )}
       </div>
     </div>
