@@ -3,12 +3,12 @@
 A visual UI builder for [`@openai/apps-sdk-ui`](https://github.com/openai/apps-sdk-ui) — compose
 ChatGPT app interfaces from the SDK's primitives, preview them live, and export clean TSX.
 
-![The builder: palette, live canvas, inspector, and exported TSX](./docs/screenshot.png)
+![The builder: palette, live canvas, inspector, and exported TSX](./docs/screenshot.svg)
 
 <details>
 <summary>Dark theme</summary>
 
-![The same view with the canvas previewing the SDK's dark theme](./docs/screenshot-dark.png)
+![The same view with the canvas previewing the SDK's dark theme](./docs/screenshot-dark.svg)
 
 </details>
 
