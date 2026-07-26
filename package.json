@@ -1,0 +1,38 @@
+{
+  "name": "appsdk-ui-builder",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "generate:registry": "node --experimental-strip-types scripts/generate-registry.mts",
+    "export:smoke": "node --experimental-strip-types scripts/export-smoke.mts",
+    "verify": "npm run generate:registry && npm run model:smoke && npm run export:smoke && npm run render:smoke && tsc -b && vite build",
+    "render:smoke": "node --experimental-strip-types scripts/render-smoke.mts",
+    "model:smoke": "node --experimental-strip-types scripts/model-smoke.mts",
+    "build:singlefile": "vite build --config vite.config.singlefile.ts"
+  },
+  "dependencies": {
+    "@openai/apps-sdk-ui": "^0.2.2",
+    "@tailwindcss/vite": "^4.3.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "^20.11.1",
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "happy-dom": "^20.11.1",
+    "oxlint": "^1.71.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1",
+    "vite-plugin-singlefile": "^2.3.3"
+  },
+  "description": "Visual UI builder for @openai/apps-sdk-ui"
+}

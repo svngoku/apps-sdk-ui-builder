@@ -1,0 +1,75 @@
+@import "tailwindcss";
+@import "@openai/apps-sdk-ui/css";
+/* Required for Tailwind to find class references in Apps SDK UI components. */
+@source "../node_modules/@openai/apps-sdk-ui";
+
+/* ---------------------------------------------------------------------------
+   Builder chrome
+   The canvas renders real Apps SDK UI components, so the surrounding builder
+   shell deliberately uses its own neutral styling to stay visually distinct
+   from the artifact being composed.
+--------------------------------------------------------------------------- */
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+}
+
+.builder-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, currentColor 20%, transparent) transparent;
+}
+
+.builder-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.builder-scroll::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklab, currentColor 18%, transparent);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.builder-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Selection + hover affordances on the canvas. Outlines are used instead of
+   borders so that they never affect layout of the composed UI. */
+[data-node-selected="true"] {
+  outline: 2px solid var(--builder-accent, #2563eb);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+[data-node-hovered="true"]:not([data-node-selected="true"]) {
+  outline: 1px dashed color-mix(in oklab, var(--builder-accent, #2563eb) 60%, transparent);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+[data-drop-target="true"] {
+  background-color: color-mix(in oklab, var(--builder-accent, #2563eb) 8%, transparent);
+  outline: 2px dashed var(--builder-accent, #2563eb);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
+[data-empty-slot="true"] {
+  min-height: 56px;
+  border: 1px dashed color-mix(in oklab, currentColor 25%, transparent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  opacity: 0.55;
+}
