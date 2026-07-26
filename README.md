@@ -3,7 +3,7 @@
 A visual UI builder for [`@openai/apps-sdk-ui`](https://github.com/openai/apps-sdk-ui) — compose
 ChatGPT app interfaces from the SDK's primitives, preview them live, and export clean TSX.
 
-![Builder interface](./docs/screenshot.jpg)
+![Builder interface](./docs/screenshot.svg)
 
 ```bash
 npm install
